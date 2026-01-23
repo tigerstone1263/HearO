@@ -6,13 +6,18 @@ import 'package:flutter/material.dart';
 enum PlayerState { idle, walk }
 
 class Player extends SpriteAnimationComponent {
-  Player({super.position})
+  Player({
+    super.position,
+    this.baseSpeed = 180,
+  })
       : super(
           anchor: Anchor.center,
           size: Vector2.all(96),
         );
 
   static final Vector2 _frameSize = Vector2.all(32);
+  final double baseSpeed;
+  Vector2 _moveDirection = Vector2.zero();
 
   late final Map<PlayerState, SpriteAnimation> _animations;
   PlayerState _state = PlayerState.idle;
@@ -46,6 +51,26 @@ class Player extends SpriteAnimationComponent {
 
     _state = nextState;
     animation = _animations[_state];
+  }
+
+  void setMoveDirection(Vector2 direction) {
+    if (direction.length2 == 0) {
+      _moveDirection = Vector2.zero();
+      setMoving(false);
+      return;
+    }
+
+    _moveDirection = direction.normalized();
+    setMoving(true);
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (_moveDirection.length2 == 0) {
+      return;
+    }
+    position.add(_moveDirection * baseSpeed * dt);
   }
 
   Future<SpriteAnimation> _buildPlaceholderAnimation({
