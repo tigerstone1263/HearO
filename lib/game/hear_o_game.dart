@@ -1,3 +1,4 @@
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
@@ -6,7 +7,7 @@ import 'package:flutter/services.dart';
 
 import 'components/player.dart';
 
-class HearOGame extends FlameGame with KeyboardEvents {
+class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   late final JoystickComponent _joystick;
   Player? _player;
   Vector2 _keyboardDirection = Vector2.zero();

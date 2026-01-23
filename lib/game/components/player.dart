@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
+import 'listening_circle.dart';
+
 enum PlayerState { idle, walk }
 
 class Player extends SpriteAnimationComponent {
@@ -41,6 +43,12 @@ class Player extends SpriteAnimationComponent {
     };
 
     animation = _animations[_state];
+
+    add(
+      ListeningCircle(radius: size.x * 1.5)
+        ..position = size / 2
+        ..priority = -1,
+    );
   }
 
   void setMoving(bool isMoving) {
