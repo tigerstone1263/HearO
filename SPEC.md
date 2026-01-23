@@ -78,7 +78,7 @@
     - `git commit` 시 템플릿이 적용되고 Task/Tests 누락 시 커밋이 차단되는지 확인
 
 ### Phase 1. 환경 구축 및 캐릭터
-- [ ] P1-01 Flutter Flame 프로젝트 셋업 (Web/Mobile 타겟)
+- [x] P1-01 Flutter Flame 프로젝트 셋업 (Web/Mobile 타겟)
   - 구현 피처: Flutter/Flame 기본 실행, Web/모바일 빌드 타겟 준비, 가로 모드 전제 구성
   - 연관 피처: 모든 런타임/입력/렌더링 구성의 기반
   - 검증:
