@@ -29,7 +29,10 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    _player = Player(position: size / 2);
+    _player = Player(
+      position: size / 2,
+      onListeningEnter: _handleListeningEnter,
+    );
     add(_player!);
 
     _joystick = JoystickComponent(
@@ -189,11 +192,27 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     };
 
     final speed = 70 + _random.nextDouble() * 50;
+    final note = _randomNote();
     final monster = Monster(
       targetProvider: () => player.position.clone(),
+      note: note,
       speed: speed,
     )..position = position;
 
     add(monster);
+  }
+
+  void _handleListeningEnter(PositionComponent other) {
+    if (!_audioUnlocked) {
+      return;
+    }
+    if (other is Monster) {
+      unawaited(_noteAudio.play(other.note));
+    }
+  }
+
+  Note _randomNote() {
+    final values = Note.values;
+    return values[_random.nextInt(values.length)];
   }
 }

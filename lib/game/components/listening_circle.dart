@@ -29,7 +29,7 @@ class ListeningCircle extends PositionComponent with CollisionCallbacks {
     );
 
     final hitbox = CircleHitbox(radius: radius)
-      ..collisionType = CollisionType.passive;
+      ..collisionType = CollisionType.active;
     add(hitbox);
   }
 

@@ -11,6 +11,7 @@ class Player extends SpriteAnimationComponent {
   Player({
     super.position,
     this.baseSpeed = 180,
+    this.onListeningEnter,
   })
       : super(
           anchor: Anchor.center,
@@ -19,6 +20,7 @@ class Player extends SpriteAnimationComponent {
 
   static final Vector2 _frameSize = Vector2.all(32);
   final double baseSpeed;
+  final void Function(PositionComponent other)? onListeningEnter;
   Vector2 _moveDirection = Vector2.zero();
 
   late final Map<PlayerState, SpriteAnimation> _animations;
@@ -45,7 +47,10 @@ class Player extends SpriteAnimationComponent {
     animation = _animations[_state];
 
     add(
-      ListeningCircle(radius: size.x * 1.5)
+      ListeningCircle(
+        radius: size.x * 1.5,
+        onEnter: onListeningEnter,
+      )
         ..position = size / 2
         ..priority = -1,
     );

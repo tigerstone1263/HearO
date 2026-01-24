@@ -2,9 +2,12 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
+import '../audio/note_audio.dart';
+
 class Monster extends CircleComponent with CollisionCallbacks {
   Monster({
     required this.targetProvider,
+    required this.note,
     this.speed = 90,
     double radius = 14,
   }) : super(
@@ -14,6 +17,7 @@ class Monster extends CircleComponent with CollisionCallbacks {
         );
 
   final Vector2 Function() targetProvider;
+  final Note note;
   final double speed;
 
   @override
