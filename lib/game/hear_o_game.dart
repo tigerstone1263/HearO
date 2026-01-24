@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 
 import 'audio/note_audio.dart';
 import 'components/monster.dart';
+import 'components/piano_keys.dart';
 import 'components/player.dart';
 
 class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
@@ -23,6 +24,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   final Random _random = Random();
   late final TimerComponent _spawnTimer;
   final Set<Monster> _monsters = {};
+  PianoKeys? _pianoKeys;
 
   @override
   Color backgroundColor() => const Color(0xFF0B0C10);
@@ -49,6 +51,11 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     );
     add(_joystick);
 
+    _pianoKeys = PianoKeys(noteAudio: _noteAudio)
+      ..position = Vector2(size.x - 24, size.y - 24)
+      ..priority = 10;
+    add(_pianoKeys!);
+
     _spawnTimer = TimerComponent(
       period: 1.8,
       repeat: true,
@@ -64,6 +71,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     if (player != null) {
       player.position = canvasSize / 2;
     }
+    _pianoKeys?.position = Vector2(canvasSize.x - 24, canvasSize.y - 24);
   }
 
   @override
