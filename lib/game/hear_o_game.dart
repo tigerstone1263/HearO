@@ -22,6 +22,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   bool _audioUnlocked = false;
   final Random _random = Random();
   late final TimerComponent _spawnTimer;
+  final Set<Monster> _monsters = {};
 
   @override
   Color backgroundColor() => const Color(0xFF0B0C10);
@@ -66,6 +67,15 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   }
 
   @override
+  void onRemove() {
+    for (final monster in _monsters) {
+      monster.removeFromParent();
+    }
+    _monsters.clear();
+    super.onRemove();
+  }
+
+  @override
   KeyEventResult onKeyEvent(
     KeyEvent event,
     Set<LogicalKeyboardKey> keysPressed,
@@ -79,6 +89,13 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       final note = _noteFromKey(event.logicalKey);
       if (note != null) {
         unawaited(_noteAudio.play(note));
+      }
+    }
+    if (event is KeyDownEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.keyX) {
+        _enrageMonsters();
+      } else if (event.logicalKey == LogicalKeyboardKey.keyC) {
+        _calmMonsters();
       }
     }
 
@@ -196,10 +213,12 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     final monster = Monster(
       targetProvider: () => player.position.clone(),
       note: note,
-      speed: speed,
+      baseSpeed: speed,
     )..position = position;
 
+    _monsters.add(monster);
     add(monster);
+    monster.removed.then((_) => _monsters.remove(monster));
   }
 
   void _handleListeningEnter(PositionComponent other) {
@@ -214,5 +233,17 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   Note _randomNote() {
     final values = Note.values;
     return values[_random.nextInt(values.length)];
+  }
+
+  void _enrageMonsters() {
+    for (final monster in _monsters) {
+      monster.setEnraged(true);
+    }
+  }
+
+  void _calmMonsters() {
+    for (final monster in _monsters) {
+      monster.setEnraged(false);
+    }
   }
 }

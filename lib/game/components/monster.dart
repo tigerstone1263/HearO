@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../audio/note_audio.dart';
 
+enum MonsterState { calm, enraged }
+
 class Monster extends CircleComponent with CollisionCallbacks {
   Monster({
     required this.targetProvider,
     required this.note,
-    this.speed = 90,
+    this.baseSpeed = 90,
     double radius = 14,
   }) : super(
           radius: radius,
@@ -18,13 +20,27 @@ class Monster extends CircleComponent with CollisionCallbacks {
 
   final Vector2 Function() targetProvider;
   final Note note;
-  final double speed;
+  final double baseSpeed;
+  MonsterState _state = MonsterState.calm;
+
+  bool get isEnraged => _state == MonsterState.enraged;
+
+  void setEnraged(bool value) {
+    final nextState = value ? MonsterState.enraged : MonsterState.calm;
+    if (nextState == _state) {
+      return;
+    }
+    _state = nextState;
+    paint = Paint()
+      ..color = value ? const Color(0xFFD84A4A) : const Color(0xFF8A3B3B);
+  }
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     add(CircleHitbox()..collisionType = CollisionType.passive);
   }
+
 
   @override
   void update(double dt) {
@@ -35,6 +51,7 @@ class Monster extends CircleComponent with CollisionCallbacks {
       return;
     }
     toTarget.normalize();
-    position.add(toTarget * speed * dt);
+    final speedMultiplier = isEnraged ? 2.0 : 1.0;
+    position.add(toTarget * baseSpeed * speedMultiplier * dt);
   }
 }
