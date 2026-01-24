@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
@@ -5,12 +7,17 @@ import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'audio/note_audio.dart';
 import 'components/player.dart';
 
 class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
+  static const String audioOverlayId = 'audioPrompt';
+
   late final JoystickComponent _joystick;
+  final NoteAudio _noteAudio = NoteAudio();
   Player? _player;
   Vector2 _keyboardDirection = Vector2.zero();
+  bool _audioUnlocked = false;
 
   @override
   Color backgroundColor() => const Color(0xFF0B0C10);
@@ -54,6 +61,13 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       return KeyEventResult.ignored;
     }
 
+    if (event is KeyDownEvent && _audioUnlocked) {
+      final note = _noteFromKey(event.logicalKey);
+      if (note != null) {
+        unawaited(_noteAudio.play(note));
+      }
+    }
+
     _keyboardDirection = _directionFromKeys(keysPressed);
     return KeyEventResult.handled;
   }
@@ -94,6 +108,26 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     return Vector2(x, y);
   }
 
+  Note? _noteFromKey(LogicalKeyboardKey key) {
+    switch (key) {
+      case LogicalKeyboardKey.keyA:
+        return Note.c;
+      case LogicalKeyboardKey.keyS:
+        return Note.d;
+      case LogicalKeyboardKey.keyD:
+        return Note.e;
+      case LogicalKeyboardKey.keyF:
+        return Note.f;
+      case LogicalKeyboardKey.keyG:
+        return Note.g;
+      case LogicalKeyboardKey.keyH:
+        return Note.a;
+      case LogicalKeyboardKey.keyJ:
+        return Note.b;
+    }
+    return null;
+  }
+
   Vector2 _directionFromJoystick(JoystickDirection direction) {
     switch (direction) {
       case JoystickDirection.up:
@@ -115,5 +149,14 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       case JoystickDirection.idle:
         return Vector2.zero();
     }
+  }
+
+  Future<void> unlockAudio() async {
+    if (_audioUnlocked) {
+      return;
+    }
+    _audioUnlocked = true;
+    overlays.remove(audioOverlayId);
+    await _noteAudio.play(Note.c);
   }
 }

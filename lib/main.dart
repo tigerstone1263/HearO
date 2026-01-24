@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'game/hear_o_game.dart';
+import 'ui/audio_unlock_overlay.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +20,8 @@ class HearOApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final game = HearOGame();
+
     return MaterialApp(
       title: 'HearO',
       debugShowCheckedModeBanner: false,
@@ -28,7 +31,15 @@ class HearOApp extends StatelessWidget {
           child: Center(
             child: AspectRatio(
               aspectRatio: 16 / 9,
-              child: GameWidget(game: HearOGame()),
+              child: GameWidget<HearOGame>(
+                game: game,
+                overlayBuilderMap: {
+                  HearOGame.audioOverlayId: (context, game) => AudioUnlockOverlay(
+                        game: game,
+                      ),
+                },
+                initialActiveOverlays: const [HearOGame.audioOverlayId],
+              ),
             ),
           ),
         ),
