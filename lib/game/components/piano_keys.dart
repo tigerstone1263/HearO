@@ -7,12 +7,14 @@ import '../audio/note_audio.dart';
 class PianoKeys extends PositionComponent {
   PianoKeys({
     required this.noteAudio,
+    this.onNoteSelected,
   }) : super(
           anchor: Anchor.bottomRight,
           size: Vector2(280, 90),
         );
 
   final NoteAudio noteAudio;
+  final void Function(Note note)? onNoteSelected;
 
   static const List<Note> _notes = [
     Note.c,
@@ -34,7 +36,11 @@ class PianoKeys extends PositionComponent {
       final key = _PianoKey(
         note: note,
         onPressed: () {
-          noteAudio.play(note);
+          if (onNoteSelected != null) {
+            onNoteSelected?.call(note);
+          } else {
+            noteAudio.play(note);
+          }
         },
       )
         ..size = Vector2(keyWidth, size.y)

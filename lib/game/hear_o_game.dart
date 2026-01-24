@@ -24,6 +24,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   final Random _random = Random();
   late final TimerComponent _spawnTimer;
   final Set<Monster> _monsters = {};
+  final Set<Monster> _listeningMonsters = {};
   PianoKeys? _pianoKeys;
 
   @override
@@ -35,6 +36,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     _player = Player(
       position: size / 2,
       onListeningEnter: _handleListeningEnter,
+      onListeningExit: _handleListeningExit,
     );
     add(_player!);
 
@@ -51,7 +53,10 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     );
     add(_joystick);
 
-    _pianoKeys = PianoKeys(noteAudio: _noteAudio)
+    _pianoKeys = PianoKeys(
+      noteAudio: _noteAudio,
+      onNoteSelected: (note) => _handlePlayerNoteInput(note, playAudio: true),
+    )
       ..position = Vector2(size.x - 24, size.y - 24)
       ..priority = 10;
     add(_pianoKeys!);
@@ -80,6 +85,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       monster.removeFromParent();
     }
     _monsters.clear();
+    _listeningMonsters.clear();
     super.onRemove();
   }
 
@@ -93,10 +99,10 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       return KeyEventResult.ignored;
     }
 
-    if (event is KeyDownEvent && _audioUnlocked) {
+    if (event is KeyDownEvent) {
       final note = _noteFromKey(event.logicalKey);
       if (note != null) {
-        unawaited(_noteAudio.play(note));
+        _handlePlayerNoteInput(note, playAudio: true);
       }
     }
     if (event is KeyDownEvent) {
@@ -226,15 +232,90 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
 
     _monsters.add(monster);
     add(monster);
-    monster.removed.then((_) => _monsters.remove(monster));
+    monster.removed.then((_) {
+      _monsters.remove(monster);
+      _listeningMonsters.remove(monster);
+    });
   }
 
   void _handleListeningEnter(PositionComponent other) {
+    if (other is Monster) {
+      _listeningMonsters.add(other);
+      if (_audioUnlocked) {
+        unawaited(_noteAudio.play(other.note));
+      }
+    }
+  }
+
+  void _handleListeningExit(PositionComponent other) {
+    if (other is Monster) {
+      _listeningMonsters.remove(other);
+    }
+  }
+
+  void _handlePlayerNoteInput(Note note, {required bool playAudio}) {
     if (!_audioUnlocked) {
       return;
     }
-    if (other is Monster) {
-      unawaited(_noteAudio.play(other.note));
+    if (playAudio) {
+      unawaited(_noteAudio.play(note));
+    }
+    final candidates = _listeningCandidates().toList();
+    if (candidates.isEmpty) {
+      return;
+    }
+    final matchingTarget = _closestListeningMonster(
+      candidates,
+      filter: (monster) => monster.note == note,
+    );
+    if (matchingTarget != null) {
+      matchingTarget.removeFromParent();
+      _listeningMonsters.remove(matchingTarget);
+      return;
+    }
+
+    final closest = _closestListeningMonster(candidates);
+    if (closest != null) {
+      closest.setEnraged(true);
+    }
+  }
+
+  Monster? _closestListeningMonster(
+    Iterable<Monster> monsters, {
+    bool Function(Monster monster)? filter,
+  }) {
+    Monster? closest;
+    var closestDistance2 = double.infinity;
+    for (final monster in monsters) {
+      if (filter != null && !filter(monster)) {
+        continue;
+      }
+      final distance2 = (monster.position - (_player?.position ?? Vector2.zero()))
+          .length2;
+      if (distance2 < closestDistance2) {
+        closestDistance2 = distance2;
+        closest = monster;
+      }
+    }
+    return closest;
+  }
+
+  Iterable<Monster> _listeningCandidates() sync* {
+    if (_listeningMonsters.isNotEmpty) {
+      yield* _listeningMonsters;
+      return;
+    }
+
+    final player = _player;
+    if (player == null) {
+      return;
+    }
+    final radius2 = player.listeningRadius * player.listeningRadius;
+    for (final monster in _monsters) {
+      final distance2 = (monster.position - player.position).length2;
+      if (distance2 <= radius2) {
+        yield monster;
+      }
     }
   }
 
