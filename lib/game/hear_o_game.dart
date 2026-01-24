@@ -5,10 +5,12 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
+import 'package:flame/text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'audio/note_audio.dart';
+import 'components/gold_note.dart';
 import 'components/monster.dart';
 import 'components/piano_keys.dart';
 import 'components/player.dart';
@@ -26,6 +28,9 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   final Set<Monster> _monsters = {};
   final Set<Monster> _listeningMonsters = {};
   PianoKeys? _pianoKeys;
+  TextComponent? _scoreText;
+  int _score = 0;
+  static const int _scorePerNote = 10;
 
   @override
   Color backgroundColor() => const Color(0xFF0B0C10);
@@ -61,6 +66,20 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       ..priority = 10;
     add(_pianoKeys!);
 
+    _scoreText = TextComponent(
+      text: 'Score 0',
+      anchor: Anchor.topCenter,
+      position: Vector2(size.x / 2, 12),
+      textRenderer: TextPaint(
+        style: const TextStyle(
+          color: Color(0xFFE1E6ED),
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    )..priority = 20;
+    add(_scoreText!);
+
     _spawnTimer = TimerComponent(
       period: 1.8,
       repeat: true,
@@ -77,6 +96,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       player.position = canvasSize / 2;
     }
     _pianoKeys?.position = Vector2(canvasSize.x - 24, canvasSize.y - 24);
+    _scoreText?.position = Vector2(canvasSize.x / 2, 12);
   }
 
   @override
@@ -269,8 +289,11 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       filter: (monster) => monster.note == note,
     );
     if (matchingTarget != null) {
+      final dropPosition = matchingTarget.position.clone();
       matchingTarget.removeFromParent();
       _listeningMonsters.remove(matchingTarget);
+      _spawnGoldNote(dropPosition);
+      _registerScore(_scorePerNote);
       return;
     }
 
@@ -317,6 +340,15 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
         yield monster;
       }
     }
+  }
+
+  void _spawnGoldNote(Vector2 position) {
+    add(GoldNote(position: position)..priority = 5);
+  }
+
+  void _registerScore(int points) {
+    _score += points;
+    _scoreText?.text = 'Score $_score';
   }
 
   Note _randomNote() {
