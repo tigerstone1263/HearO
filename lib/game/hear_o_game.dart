@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'audio/note_audio.dart';
+import 'components/monster.dart';
 import 'components/player.dart';
 
 class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
@@ -18,6 +20,8 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   Player? _player;
   Vector2 _keyboardDirection = Vector2.zero();
   bool _audioUnlocked = false;
+  final Random _random = Random();
+  late final TimerComponent _spawnTimer;
 
   @override
   Color backgroundColor() => const Color(0xFF0B0C10);
@@ -40,6 +44,13 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       margin: const EdgeInsets.only(left: 24, bottom: 24),
     );
     add(_joystick);
+
+    _spawnTimer = TimerComponent(
+      period: 1.8,
+      repeat: true,
+      onTick: _spawnMonster,
+    );
+    add(_spawnTimer);
   }
 
   @override
@@ -158,5 +169,31 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     _audioUnlocked = true;
     overlays.remove(audioOverlayId);
     await _noteAudio.play(Note.c);
+  }
+
+  void _spawnMonster() {
+    final player = _player;
+    if (player == null || size.x == 0 || size.y == 0) {
+      return;
+    }
+
+    const spawnMargin = 48.0;
+    final edge = _random.nextInt(4);
+    final width = size.x;
+    final height = size.y;
+    final position = switch (edge) {
+      0 => Vector2(_random.nextDouble() * width, -spawnMargin),
+      1 => Vector2(width + spawnMargin, _random.nextDouble() * height),
+      2 => Vector2(_random.nextDouble() * width, height + spawnMargin),
+      _ => Vector2(-spawnMargin, _random.nextDouble() * height),
+    };
+
+    final speed = 70 + _random.nextDouble() * 50;
+    final monster = Monster(
+      targetProvider: () => player.position.clone(),
+      speed: speed,
+    )..position = position;
+
+    add(monster);
   }
 }
