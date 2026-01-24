@@ -1,18 +1,21 @@
 import 'dart:ui' as ui;
 
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
 import 'listening_circle.dart';
+import 'monster.dart';
 
 enum PlayerState { idle, walk }
 
-class Player extends SpriteAnimationComponent {
+class Player extends SpriteAnimationComponent with CollisionCallbacks {
   Player({
     super.position,
     this.baseSpeed = 180,
     this.onListeningEnter,
     this.onListeningExit,
+    this.onHit,
   })
       : super(
           anchor: Anchor.center,
@@ -23,6 +26,7 @@ class Player extends SpriteAnimationComponent {
   final double baseSpeed;
   final void Function(PositionComponent other)? onListeningEnter;
   final void Function(PositionComponent other)? onListeningExit;
+  final void Function(PositionComponent other)? onHit;
   late final double listeningRadius;
   Vector2 _moveDirection = Vector2.zero();
 
@@ -59,6 +63,20 @@ class Player extends SpriteAnimationComponent {
         ..position = size / 2
         ..priority = -1,
     );
+
+    add(
+      CircleHitbox()
+        ..collisionType = CollisionType.active
+        ..isSolid = true,
+    );
+  }
+
+  @override
+  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
+    super.onCollisionStart(intersectionPoints, other);
+    if (other is Monster && other.canDamage) {
+      onHit?.call(other);
+    }
   }
 
   void setMoving(bool isMoving) {

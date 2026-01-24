@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 
 import 'audio/note_audio.dart';
 import 'components/gold_note.dart';
+import 'components/health_display.dart';
 import 'components/monster.dart';
 import 'components/piano_keys.dart';
 import 'components/player.dart';
@@ -31,6 +32,12 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   TextComponent? _scoreText;
   int _score = 0;
   static const int _scorePerNote = 10;
+  static const int _maxHearts = 3;
+  int _currentHearts = _maxHearts;
+  HealthDisplay? _healthDisplay;
+  bool _isInvincible = false;
+  double _invincibleTimer = 0;
+  static const double _invincibleDuration = 1.2;
 
   @override
   Color backgroundColor() => const Color(0xFF0B0C10);
@@ -42,6 +49,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       position: size / 2,
       onListeningEnter: _handleListeningEnter,
       onListeningExit: _handleListeningExit,
+      onHit: _handlePlayerHit,
     );
     add(_player!);
 
@@ -80,6 +88,14 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     )..priority = 20;
     add(_scoreText!);
 
+    _healthDisplay = HealthDisplay(
+      maxHearts: _maxHearts,
+      currentHearts: _currentHearts,
+    )
+      ..position = Vector2(size.x / 2, 36)
+      ..priority = 20;
+    add(_healthDisplay!);
+
     _spawnTimer = TimerComponent(
       period: 1.8,
       repeat: true,
@@ -97,6 +113,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     }
     _pianoKeys?.position = Vector2(canvasSize.x - 24, canvasSize.y - 24);
     _scoreText?.position = Vector2(canvasSize.x / 2, 12);
+    _healthDisplay?.position = Vector2(canvasSize.x / 2, 36);
   }
 
   @override
@@ -143,6 +160,13 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     final player = _player;
     if (player == null) {
       return;
+    }
+
+    if (_isInvincible) {
+      _invincibleTimer -= dt;
+      if (_invincibleTimer <= 0) {
+        _isInvincible = false;
+      }
     }
 
     final joystickDirection = _joystick.direction;
@@ -349,6 +373,19 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   void _registerScore(int points) {
     _score += points;
     _scoreText?.text = 'Score $_score';
+  }
+
+  void _handlePlayerHit(PositionComponent other) {
+    if (_isInvincible) {
+      return;
+    }
+    if (other is Monster) {
+      other.disableDamage();
+    }
+    _currentHearts = (_currentHearts - 1).clamp(0, _maxHearts);
+    _healthDisplay?.currentHearts = _currentHearts;
+    _isInvincible = true;
+    _invincibleTimer = _invincibleDuration;
   }
 
   Note _randomNote() {

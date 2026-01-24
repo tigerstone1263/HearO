@@ -22,6 +22,13 @@ class Monster extends CircleComponent with CollisionCallbacks {
   final Note note;
   final double baseSpeed;
   MonsterState _state = MonsterState.calm;
+  bool _canDamage = true;
+
+  bool get canDamage => _canDamage;
+
+  void disableDamage() {
+    _canDamage = false;
+  }
 
   bool get isEnraged => _state == MonsterState.enraged;
 
@@ -38,7 +45,11 @@ class Monster extends CircleComponent with CollisionCallbacks {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    add(CircleHitbox()..collisionType = CollisionType.passive);
+    add(
+      CircleHitbox()
+        ..collisionType = CollisionType.passive
+        ..isSolid = true,
+    );
   }
 
 
