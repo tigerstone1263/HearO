@@ -288,7 +288,8 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       _ => Vector2(-spawnMargin, _random.nextDouble() * height),
     };
 
-    final speed = 70 + _random.nextDouble() * 50;
+    final speedBase = 70 + _random.nextDouble() * 50;
+    final speed = speedBase * speedMultiplierFor(_stageManager.phase);
     final note = _randomNote();
     final monster = Monster(
       targetProvider: () => player.position.clone(),
@@ -415,8 +416,10 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   }
 
   Note _randomNote() {
+    final pool = notePoolFor(_stageManager.phase);
     final values = Note.values;
-    return values[_random.nextInt(values.length)];
+    final index = pool[_random.nextInt(pool.length)];
+    return values[index];
   }
 
   void _enrageMonsters() {

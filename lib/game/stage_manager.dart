@@ -2,6 +2,32 @@ import 'dart:async';
 
 enum StagePhase { stage1, stage2, stage3, stage4 }
 
+List<int> notePoolFor(StagePhase phase) {
+  switch (phase) {
+    case StagePhase.stage1:
+      return [0, 1, 2]; // C, D, E
+    case StagePhase.stage2:
+      return [0, 1, 2, 3, 4]; // C, D, E, F, G
+    case StagePhase.stage3:
+      return [0, 1, 2, 3, 4, 5, 6]; // C..B
+    case StagePhase.stage4:
+      return [0, 1, 2, 3, 4, 5, 6]; // Boss uses full range
+  }
+}
+
+double speedMultiplierFor(StagePhase phase) {
+  switch (phase) {
+    case StagePhase.stage1:
+      return 0.8;
+    case StagePhase.stage2:
+      return 1.0;
+    case StagePhase.stage3:
+      return 1.25;
+    case StagePhase.stage4:
+      return 1.4;
+  }
+}
+
 class StageManager {
   StageManager({
     this.stageDuration = const Duration(seconds: 30),
