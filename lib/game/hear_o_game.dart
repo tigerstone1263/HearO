@@ -35,7 +35,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   TextComponent? _scoreText;
   int _score = 0;
   static const int _scorePerNote = 10;
-  static const int _maxHearts = 3;
+  static const int _maxHearts = 12;
   int _currentHearts = _maxHearts;
   HealthDisplay? _healthDisplay;
   TextComponent? _stageText;
