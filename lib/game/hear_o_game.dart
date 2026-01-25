@@ -12,9 +12,11 @@ import 'package:flutter/services.dart';
 import 'audio/note_audio.dart';
 import 'components/gold_note.dart';
 import 'components/health_display.dart';
+import 'components/boss.dart';
 import 'components/monster.dart';
 import 'components/piano_keys.dart';
 import 'components/player.dart';
+import 'components/projectile.dart';
 import 'stage_manager.dart';
 
 class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
@@ -41,6 +43,8 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   bool _isInvincible = false;
   double _invincibleTimer = 0;
   static const double _invincibleDuration = 1.2;
+  Boss? _boss;
+  late final TimerComponent _bossFireTimer;
 
   @override
   Color backgroundColor() => const Color(0xFF0B0C10);
@@ -120,6 +124,13 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     );
     add(_spawnTimer);
 
+    _bossFireTimer = TimerComponent(
+      period: 2.2,
+      repeat: true,
+      onTick: _fireBossProjectile,
+    );
+    add(_bossFireTimer);
+
     _stageManager = StageManager(onStageChanged: _onStageChanged);
     _stageManager.start();
   }
@@ -144,6 +155,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     }
     _monsters.clear();
     _listeningMonsters.clear();
+    _boss?.removeFromParent();
     _stageManager.dispose();
     super.onRemove();
   }
@@ -344,6 +356,14 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       return;
     }
 
+    final boss = _boss;
+    if (boss != null && _stageManager.phase == StagePhase.stage4) {
+      if (boss.note == note) {
+        _handleBossHit();
+        return;
+      }
+    }
+
     final closest = _closestListeningMonster(candidates);
     if (closest != null) {
       closest.setEnraged(true);
@@ -413,6 +433,55 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
 
   void _onStageChanged(StagePhase phase) {
     _stageText?.text = _stageManager.label();
+    if (phase == StagePhase.stage4) {
+      _spawnBoss();
+    }
+  }
+
+  void _spawnBoss() {
+    if (_boss != null) {
+      return;
+    }
+    final bossNote = _randomNote();
+    _boss = Boss(
+      note: bossNote,
+      onProjectileSpawn: _addProjectile,
+    )..position = Vector2(size.x / 2, size.y / 2);
+    add(_boss!);
+  }
+
+  void _handleBossHit() {
+    final boss = _boss;
+    if (boss == null) {
+      return;
+    }
+    boss.hitPoints -= 1;
+    boss.setEnraged(true);
+    if (boss.hitPoints <= 0) {
+      final dropPosition = boss.position.clone();
+      boss.removeFromParent();
+      _boss = null;
+      _spawnGoldNote(dropPosition);
+      _registerScore(_scorePerNote * 5);
+      return;
+    }
+    boss.note = _randomNote();
+  }
+
+  void _fireBossProjectile() {
+    final boss = _boss;
+    final player = _player;
+    if (boss == null || player == null) {
+      return;
+    }
+    if (_stageManager.phase != StagePhase.stage4) {
+      return;
+    }
+    boss.spawnProjectile(player.position.clone());
+  }
+
+  void _addProjectile(Projectile projectile) {
+    add(projectile);
   }
 
   Note _randomNote() {

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import 'listening_circle.dart';
 import 'monster.dart';
+import 'projectile.dart';
 
 enum PlayerState { idle, walk }
 
@@ -76,6 +77,11 @@ class Player extends SpriteAnimationComponent with CollisionCallbacks {
     super.onCollisionStart(intersectionPoints, other);
     if (other is Monster && other.canDamage) {
       onHit?.call(other);
+    }
+    if (other is Projectile && other.canDamage) {
+      onHit?.call(other);
+      other.disableDamage();
+      other.removeFromParent();
     }
   }
 
