@@ -21,6 +21,8 @@ import 'stage_manager.dart';
 
 class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   static const String audioOverlayId = 'audioPrompt';
+  static const String gameOverOverlayId = 'gameOver';
+  static const String clearOverlayId = 'clear';
 
   late final JoystickComponent _joystick;
   final NoteAudio _noteAudio = NoteAudio();
@@ -45,6 +47,10 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   static const double _invincibleDuration = 1.2;
   Boss? _boss;
   late final TimerComponent _bossFireTimer;
+  bool _isGameOver = false;
+  bool _isClear = false;
+
+  int get score => _score;
 
   @override
   Color backgroundColor() => const Color(0xFF0B0C10);
@@ -429,6 +435,9 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     _healthDisplay?.currentHearts = _currentHearts;
     _isInvincible = true;
     _invincibleTimer = _invincibleDuration;
+    if (_currentHearts <= 0) {
+      _triggerGameOver();
+    }
   }
 
   void _onStageChanged(StagePhase phase) {
@@ -463,9 +472,56 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       _boss = null;
       _spawnGoldNote(dropPosition);
       _registerScore(_scorePerNote * 5);
+      _triggerClear();
       return;
     }
     boss.note = _randomNote();
+  }
+
+  void _triggerGameOver() {
+    if (_isGameOver || _isClear) {
+      return;
+    }
+    _isGameOver = true;
+    pauseEngine();
+    _spawnTimer.timer.stop();
+    _bossFireTimer.timer.stop();
+    overlays.add(gameOverOverlayId);
+  }
+
+  void _triggerClear() {
+    if (_isGameOver || _isClear) {
+      return;
+    }
+    _isClear = true;
+    pauseEngine();
+    _spawnTimer.timer.stop();
+    _bossFireTimer.timer.stop();
+    overlays.add(clearOverlayId);
+  }
+
+  void restart() {
+    overlays.remove(gameOverOverlayId);
+    overlays.remove(clearOverlayId);
+    _isGameOver = false;
+    _isClear = false;
+    _score = 0;
+    _scoreText?.text = 'Score 0';
+    _currentHearts = _maxHearts;
+    _healthDisplay?.currentHearts = _currentHearts;
+    _isInvincible = false;
+    _invincibleTimer = 0;
+    _boss?.removeFromParent();
+    _boss = null;
+    for (final monster in _monsters.toList()) {
+      monster.removeFromParent();
+    }
+    _monsters.clear();
+    _listeningMonsters.clear();
+    _spawnTimer.timer.start();
+    _bossFireTimer.timer.start();
+    resumeEngine();
+    _stageManager.start();
   }
 
   void _fireBossProjectile() {
