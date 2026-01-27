@@ -23,6 +23,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   static const String audioOverlayId = 'audioPrompt';
   static const String gameOverOverlayId = 'gameOver';
   static const String clearOverlayId = 'clear';
+  static const String homeOverlayId = 'home';
 
   late final JoystickComponent _joystick;
   final NoteAudio _noteAudio = NoteAudio();
@@ -37,6 +38,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   TextComponent? _scoreText;
   int _score = 0;
   static const int _scorePerNote = 10;
+  static const double _monsterSpeedScale = 0.5;
   static const int _maxHearts = 12;
   int _currentHearts = _maxHearts;
   HealthDisplay? _healthDisplay;
@@ -49,6 +51,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   late final TimerComponent _bossFireTimer;
   bool _isGameOver = false;
   bool _isClear = false;
+  bool _gameStarted = false;
 
   int get score => _score;
 
@@ -64,7 +67,9 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       onListeningExit: _handleListeningExit,
       onHit: _handlePlayerHit,
     );
-    add(_player!);
+    world.add(_player!);
+    camera.viewfinder.anchor = Anchor.center;
+    camera.follow(_player!, snap: true);
 
     _joystick = JoystickComponent(
       knob: CircleComponent(
@@ -77,7 +82,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       ),
       margin: const EdgeInsets.only(left: 24, bottom: 24),
     );
-    add(_joystick);
+    camera.viewport.add(_joystick);
 
     _pianoKeys = PianoKeys(
       noteAudio: _noteAudio,
@@ -85,7 +90,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     )
       ..position = Vector2(size.x - 24, size.y - 24)
       ..priority = 10;
-    add(_pianoKeys!);
+    camera.viewport.add(_pianoKeys!);
 
     _scoreText = TextComponent(
       text: 'Score 0',
@@ -99,7 +104,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
         ),
       ),
     )..priority = 20;
-    add(_scoreText!);
+    camera.viewport.add(_scoreText!);
 
     _healthDisplay = HealthDisplay(
       maxHearts: _maxHearts,
@@ -107,7 +112,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     )
       ..position = Vector2(size.x / 2, 36)
       ..priority = 20;
-    add(_healthDisplay!);
+    camera.viewport.add(_healthDisplay!);
 
     _stageText = TextComponent(
       text: 'Stage 1',
@@ -121,7 +126,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
         ),
       ),
     )..priority = 20;
-    add(_stageText!);
+    camera.viewport.add(_stageText!);
 
     _spawnTimer = TimerComponent(
       period: 1.8,
@@ -129,6 +134,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       onTick: _spawnMonster,
     );
     add(_spawnTimer);
+    _spawnTimer.timer.stop();
 
     _bossFireTimer = TimerComponent(
       period: 2.2,
@@ -136,9 +142,9 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
       onTick: _fireBossProjectile,
     );
     add(_bossFireTimer);
+    _bossFireTimer.timer.stop();
 
     _stageManager = StageManager(onStageChanged: _onStageChanged);
-    _stageManager.start();
   }
 
   @override
@@ -299,15 +305,23 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     final edge = _random.nextInt(4);
     final width = size.x;
     final height = size.y;
+    final center = camera.viewfinder.position;
+    final halfWidth = width / 2;
+    final halfHeight = height / 2;
+    final left = center.x - halfWidth;
+    final right = center.x + halfWidth;
+    final top = center.y - halfHeight;
+    final bottom = center.y + halfHeight;
     final position = switch (edge) {
-      0 => Vector2(_random.nextDouble() * width, -spawnMargin),
-      1 => Vector2(width + spawnMargin, _random.nextDouble() * height),
-      2 => Vector2(_random.nextDouble() * width, height + spawnMargin),
-      _ => Vector2(-spawnMargin, _random.nextDouble() * height),
+      0 => Vector2(left + _random.nextDouble() * width, top - spawnMargin),
+      1 => Vector2(right + spawnMargin, top + _random.nextDouble() * height),
+      2 => Vector2(left + _random.nextDouble() * width, bottom + spawnMargin),
+      _ => Vector2(left - spawnMargin, top + _random.nextDouble() * height),
     };
 
     final speedBase = 70 + _random.nextDouble() * 50;
-    final speed = speedBase * speedMultiplierFor(_stageManager.phase);
+    final speed =
+        speedBase * _monsterSpeedScale * speedMultiplierFor(_stageManager.phase);
     final note = _randomNote();
     final monster = Monster(
       targetProvider: () => player.position.clone(),
@@ -316,7 +330,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     )..position = position;
 
     _monsters.add(monster);
-    add(monster);
+    world.add(monster);
     monster.removed.then((_) {
       _monsters.remove(monster);
       _listeningMonsters.remove(monster);
@@ -416,7 +430,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   }
 
   void _spawnGoldNote(Vector2 position) {
-    add(GoldNote(position: position)..priority = 5);
+    world.add(GoldNote(position: position)..priority = 5);
   }
 
   void _registerScore(int points) {
@@ -455,8 +469,8 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     _boss = Boss(
       note: bossNote,
       onProjectileSpawn: _addProjectile,
-    )..position = Vector2(size.x / 2, size.y / 2);
-    add(_boss!);
+    )..position = camera.viewfinder.position.clone();
+    world.add(_boss!);
   }
 
   void _handleBossHit() {
@@ -524,6 +538,16 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     _stageManager.start();
   }
 
+  void startGame() {
+    if (_gameStarted) {
+      return;
+    }
+    _gameStarted = true;
+    restart();
+    overlays.remove(homeOverlayId);
+    overlays.add(audioOverlayId);
+  }
+
   void _fireBossProjectile() {
     final boss = _boss;
     final player = _player;
@@ -537,7 +561,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   }
 
   void _addProjectile(Projectile projectile) {
-    add(projectile);
+    world.add(projectile);
   }
 
   Note _randomNote() {

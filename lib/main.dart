@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'game/hear_o_game.dart';
 import 'ui/audio_unlock_overlay.dart';
 import 'ui/end_overlay.dart';
+import 'ui/home_overlay.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +16,7 @@ Future<void> main() async {
 
   runApp(const HearOApp());
 }
+
 
 class HearOApp extends StatelessWidget {
   const HearOApp({super.key});
@@ -35,6 +37,9 @@ class HearOApp extends StatelessWidget {
               child: GameWidget<HearOGame>(
                 game: game,
                 overlayBuilderMap: {
+                  HearOGame.homeOverlayId: (context, game) => HomeOverlay(
+                        onStart: () => (game as HearOGame).startGame(),
+                      ),
                   HearOGame.audioOverlayId: (context, game) => AudioUnlockOverlay(
                         game: game,
                       ),
@@ -49,7 +54,7 @@ class HearOApp extends StatelessWidget {
                         onRestart: game.restart,
                       ),
                 },
-                initialActiveOverlays: const [HearOGame.audioOverlayId],
+                initialActiveOverlays: const [HearOGame.homeOverlayId],
               ),
             ),
           ),

@@ -1,8 +1,6 @@
-import 'dart:ui' as ui;
-
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:flutter/material.dart';
+import 'package:flame/cache.dart';
 
 import 'listening_circle.dart';
 import 'monster.dart';
@@ -20,10 +18,14 @@ class Player extends SpriteAnimationComponent with CollisionCallbacks {
   })
       : super(
           anchor: Anchor.center,
-          size: Vector2.all(96),
+          size: Vector2(96, 138),
         );
 
-  static final Vector2 _frameSize = Vector2.all(32);
+  static const String _idleSpritePath = 'assets/images/player1/idle.png';
+  static const String _walkSpritePath = 'assets/images/player1/walk.png';
+  static final Images _imageCache = Images(prefix: '');
+  static final Vector2 _frameSize = Vector2(128, 184);
+  static const int _framesPerRow = 11;
   final double baseSpeed;
   final void Function(PositionComponent other)? onListeningEnter;
   final void Function(PositionComponent other)? onListeningExit;
@@ -31,28 +33,24 @@ class Player extends SpriteAnimationComponent with CollisionCallbacks {
   late final double listeningRadius;
   Vector2 _moveDirection = Vector2.zero();
 
-  late final Map<PlayerState, SpriteAnimation> _animations;
+  final Map<PlayerState, SpriteAnimation> _animations = {};
+  bool _animationsReady = false;
   PlayerState _state = PlayerState.idle;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     listeningRadius = size.x * 1.5;
-    _animations = {
-      PlayerState.idle: await _buildPlaceholderAnimation(
-        frames: 4,
-        stepTime: 0.2,
-        baseColor: const Color(0xFF3C5A7A),
-        accentColor: const Color(0xFFE1E6ED),
-      ),
-      PlayerState.walk: await _buildPlaceholderAnimation(
-        frames: 6,
-        stepTime: 0.12,
-        baseColor: const Color(0xFF6B8F4E),
-        accentColor: const Color(0xFFF2E8C9),
-      ),
-    };
-
+    _animations[PlayerState.idle] = await _buildAnimation(
+      _idleSpritePath,
+      stepTime: 0.18,
+    );
+    _animations[PlayerState.walk] = await _buildAnimation(
+      _walkSpritePath,
+      stepTime: 0.12,
+    );
+    _animationsReady = true;
+    _state = _moveDirection.length2 > 0 ? PlayerState.walk : PlayerState.idle;
     animation = _animations[_state];
 
     add(
@@ -92,6 +90,9 @@ class Player extends SpriteAnimationComponent with CollisionCallbacks {
     }
 
     _state = nextState;
+    if (!_animationsReady) {
+      return;
+    }
     animation = _animations[_state];
   }
 
@@ -115,65 +116,18 @@ class Player extends SpriteAnimationComponent with CollisionCallbacks {
     position.add(_moveDirection * baseSpeed * dt);
   }
 
-  Future<SpriteAnimation> _buildPlaceholderAnimation({
-    required int frames,
+  Future<SpriteAnimation> _buildAnimation(
+    String spritePath, {
     required double stepTime,
-    required Color baseColor,
-    required Color accentColor,
   }) async {
-    final image = await _buildPlaceholderSheet(
-      frames: frames,
-      baseColor: baseColor,
-      accentColor: accentColor,
-    );
-
+    final image = await _imageCache.load(spritePath);
     return SpriteAnimation.fromFrameData(
       image,
       SpriteAnimationData.sequenced(
-        amount: frames,
+        amount: _framesPerRow,
         stepTime: stepTime,
         textureSize: _frameSize,
       ),
     );
-  }
-
-  Future<ui.Image> _buildPlaceholderSheet({
-    required int frames,
-    required Color baseColor,
-    required Color accentColor,
-  }) async {
-    // Placeholder sprite sheet for animation wiring before real art arrives.
-    final width = (_frameSize.x * frames).toInt();
-    final height = _frameSize.y.toInt();
-
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(
-      recorder,
-      Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
-    );
-
-    for (var index = 0; index < frames; index++) {
-      final frameLeft = _frameSize.x * index;
-      final frameRect = Rect.fromLTWH(
-        frameLeft,
-        0,
-        _frameSize.x,
-        _frameSize.y,
-      );
-
-      final framePaint = Paint()..color = baseColor.withOpacity(0.7 + index * 0.04);
-      canvas.drawRect(frameRect, framePaint);
-
-      final pulse = 0.18 + (index / frames) * 0.3;
-      final center = Offset(
-        frameLeft + _frameSize.x * 0.5,
-        _frameSize.y * 0.55,
-      );
-      final accentPaint = Paint()..color = accentColor;
-      canvas.drawCircle(center, _frameSize.x * pulse, accentPaint);
-    }
-
-    final picture = recorder.endRecording();
-    return picture.toImage(width, height);
   }
 }
