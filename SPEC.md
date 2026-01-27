@@ -133,6 +133,13 @@
     - 앱 실행 시 홈 화면이 먼저 표시되고 아래 보이지 않음
     - Start 버튼을 누르면 홈 화면이 닫히고 게임이 초기화/시작되며 Audio Unlock 오버레이가 나타남
 
+- [ ] P1-08 홈 화면 MVI 구조
+  - 구현 피처: `presentation/home`에 Intent/State/ViewModel/Screen을 갖춘 MVI 구성, Start 버튼은 ViewModel에 Intent로 전달
+  - 연관 피처: 홈 오버레이, 시작 로직, 오버레이 상태 흐름
+  - 검증:
+    - 홈 화면은 ViewModel의 상태 스트림을 통해 버튼을 활성/비활성화함
+    - Start 버튼이 눌리면 Intent가 전달되어 ViewModel이 시작 상태를 내보내고 게임이 시작됨
+
 ### Phase 2. 사운드 및 몬스터 시스템
 - [x] P2-01 오디오 엔진 연동 및 음계별 리소스 확보
   - 구현 피처: audioplayers 연동, 음계별 샘플 재생 (임시 사인파 wav 리소스 포함), 웹 자동재생 제한 대응 오버레이
