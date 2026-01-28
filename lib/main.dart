@@ -6,6 +6,7 @@ import 'game/hear_o_game.dart';
 import 'ui/audio_unlock_overlay.dart';
 import 'ui/end_overlay.dart';
 import 'ui/home_overlay.dart';
+import 'ui/splash_overlay.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +38,9 @@ class HearOApp extends StatelessWidget {
               child: GameWidget<HearOGame>(
                 game: game,
                 overlayBuilderMap: {
+                  HearOGame.splashOverlayId: (context, game) => SplashOverlay(
+                        onComplete: () => (game as HearOGame).showHomeOverlay(),
+                      ),
                   HearOGame.homeOverlayId: (context, game) => HomeOverlay(
                         onStart: () => (game as HearOGame).startGame(),
                       ),
@@ -54,7 +58,7 @@ class HearOApp extends StatelessWidget {
                         onRestart: game.restart,
                       ),
                 },
-                initialActiveOverlays: const [HearOGame.homeOverlayId],
+                initialActiveOverlays: const [HearOGame.splashOverlayId],
               ),
             ),
           ),

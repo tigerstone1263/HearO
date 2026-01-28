@@ -24,6 +24,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   static const String gameOverOverlayId = 'gameOver';
   static const String clearOverlayId = 'clear';
   static const String homeOverlayId = 'home';
+  static const String splashOverlayId = 'splash';
 
   late final JoystickComponent _joystick;
   final NoteAudio _noteAudio = NoteAudio();
@@ -545,7 +546,13 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     _gameStarted = true;
     restart();
     overlays.remove(homeOverlayId);
+    overlays.remove(splashOverlayId);
     overlays.add(audioOverlayId);
+  }
+
+  void showHomeOverlay() {
+    overlays.remove(splashOverlayId);
+    overlays.add(homeOverlayId);
   }
 
   void _fireBossProjectile() {

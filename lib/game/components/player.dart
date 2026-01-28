@@ -24,8 +24,8 @@ class Player extends SpriteAnimationComponent with CollisionCallbacks {
   static const String _idleSpritePath = 'assets/images/player1/idle.png';
   static const String _walkSpritePath = 'assets/images/player1/walk.png';
   static final Images _imageCache = Images(prefix: '');
-  static final Vector2 _frameSize = Vector2(128, 184);
-  static const int _framesPerRow = 11;
+  static final Vector2 _frameSize = Vector2(864, 241);
+  static const int _framesPerRow = 4;
   final double baseSpeed;
   final void Function(PositionComponent other)? onListeningEnter;
   final void Function(PositionComponent other)? onListeningExit;

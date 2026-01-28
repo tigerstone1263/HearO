@@ -126,19 +126,34 @@
     - Idle 상태에서 player1 idle 애니메이션이 재생됨
     - 이동 시 player1 walk 애니메이션으로 전환됨
 
-- [ ] P1-07 홈 화면 UX
+- [x] P1-07 홈 화면 UX
   - 구현 피처: 게임 시작 전 타이틀, 안내 텍스트, Start 버튼을 보여주는 홈 화면 오버레이
   - 연관 피처: 오버레이 시스템, 게임 시작/스테이지 관리, 오디오 잠금 해제
   - 검증:
-    - 앱 실행 시 홈 화면이 먼저 표시되고 아래 보이지 않음
-    - Start 버튼을 누르면 홈 화면이 닫히고 게임이 초기화/시작되며 Audio Unlock 오버레이가 나타남
+    - 앱 실행 시 스플래시 오버레이 후 home 오버레이가 나타나며, 타이틀/가이드 텍스트/버튼이 화면 중앙에 표시됨
+    - Start 버튼을 누르면 `HomeViewModel`이 `isStarting` 상태로 변경되고 `HearOGame.startGame()` 콜백이 실행되어 오버레이가 닫힘
 
-- [ ] P1-08 홈 화면 MVI 구조
+- [x] P1-08 홈 화면 MVI 구조
   - 구현 피처: `presentation/home`에 Intent/State/ViewModel/Screen을 갖춘 MVI 구성, Start 버튼은 ViewModel에 Intent로 전달
   - 연관 피처: 홈 오버레이, 시작 로직, 오버레이 상태 흐름
   - 검증:
-    - 홈 화면은 ViewModel의 상태 스트림을 통해 버튼을 활성/비활성화함
-    - Start 버튼이 눌리면 Intent가 전달되어 ViewModel이 시작 상태를 내보내고 게임이 시작됨
+    - `HomeViewModel`이 `HomeState` 스트림을 브로드캐스트하며 `isStarting` 값으로 버튼을 disable/enable
+    - `StartGameIntent`을 받으면 `HomeState(isStarting: true)`를 emit하고 `onStart` 콜백을 호출하여 `HearOGame`이 시작됨
+
+- [x] P1-09 스플래시 화면 MVI 구조
+  - 구현 피처: `presentation/splash`에 Intent/State/ViewModel/Screen을 갖춘 MVI 구성, 자동으로 홈 화면을 트리거
+  - 연관 피처: 오버레이 흐름, 홈 오버레이 실행 시점
+  - 검증:
+    - 앱 실행 시 스플래시 오버레이가 처음 등장하고 1.5초(30 tick) 후 `HearOGame.splashOverlayId`가 닫히며 home 화면 오버레이가 열림
+    - `SplashViewModel`이 타이머 기반으로 `progress` 값을 emit하고 완료 시 `onComplete` 콜백으로 홈 오버레이를 트리거함
+
+- [ ] P1-10 세이브 파일 선택 UI
+  - 구현 피처: 홈 오버레이에 최근/저장된 세이브 슬롯 카드 리스트를 추가하여 유저가 원하는 세이브를 직접 선택하게 함
+  - 연관 피처: HomeViewModel 상태 스트림, 선택된 슬롯 강조, Start 버튼을 눌렀을 때 슬롯 아이디를 기반으로 게임 시작 준비
+  - 검증:
+    - HomeViewModel이 기본 세이브 슬롯 목록(`Slot 01`, `Slot 02`, …)을 브로드캐스트하고 첫 슬롯이 기본 선택으로 강조됨
+    - 슬롯을 터치하면 `SelectSaveIntent`가 발행되어 `selectedSaveId`가 변경되고, UI에서 선택된 슬롯 카드의 테두리가 강조됨
+    - `Start Adventure` 버튼은 선택된 슬롯을 기반으로 게임을 시작하도록 준비되어 있어야 하며, 슬롯 데이터는 향후 저장 로직을 위한 기반으로 출력 가능함
 
 ### Phase 2. 사운드 및 몬스터 시스템
 - [x] P2-01 오디오 엔진 연동 및 음계별 리소스 확보
