@@ -14,6 +14,7 @@ import 'audio/note_audio.dart';
 import 'components/gold_note.dart';
 import 'components/health_display.dart';
 import 'components/boss.dart';
+import 'components/forest_map.dart';
 import 'components/monster.dart';
 import 'components/piano_keys.dart';
 import 'components/player.dart';
@@ -54,6 +55,10 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   bool _isGameOver = false;
   bool _isClear = false;
   bool _gameStarted = false;
+  ForestMap? _forestMap;
+  Rect _mapBounds = Rect.zero;
+  int _mapIndex = 0;
+  bool _isMapTransitioning = false;
 
   int get score => _score;
 
@@ -147,6 +152,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     _bossFireTimer.timer.stop();
 
     _stageManager = StageManager(onStageChanged: _onStageChanged);
+    _loadMap(_mapIndex);
 
     if (kDebugMode) {
       debugMode = true;
@@ -164,6 +170,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     _scoreText?.position = Vector2(canvasSize.x / 2, 12);
     _healthDisplay?.position = Vector2(canvasSize.x / 2, 36);
     _stageText?.position = Vector2(canvasSize.x / 2, 58);
+    _updateCameraBounds();
   }
 
   @override
@@ -174,6 +181,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     _monsters.clear();
     _listeningMonsters.clear();
     _boss?.removeFromParent();
+    _forestMap?.removeFromParent();
     _stageManager.dispose();
     super.onRemove();
   }
@@ -229,6 +237,62 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     } else {
       player.setMoveDirection(Vector2.zero());
     }
+
+    _constrainPlayerToMap(player);
+  }
+
+  void _loadMap(int index) {
+    final mapSize = _calculateMapSize();
+    _forestMap?.removeFromParent();
+    _forestMap = ForestMap(
+      mapIndex: index,
+      mapSize: mapSize,
+      onExitReached: _handleExitReached,
+    );
+    world.add(_forestMap!);
+    _mapBounds = Rect.fromLTWH(0, 0, mapSize.x, mapSize.y);
+    _updateCameraBounds();
+    final player = _player;
+    if (player != null) {
+      player.position = _forestMap!.entryPoint.clone();
+    }
+  }
+
+  Vector2 _calculateMapSize() {
+    const minimumSize = Vector2(1400, 900);
+    final width = max(size.x * 2.0, minimumSize.x);
+    final height = max(size.y * 1.8, minimumSize.y);
+    return Vector2(width, height);
+  }
+
+  void _updateCameraBounds() {
+    if (_mapBounds == Rect.zero) {
+      return;
+    }
+    camera.worldBounds = _mapBounds;
+  }
+
+  void _constrainPlayerToMap(Player player) {
+    if (_mapBounds == Rect.zero) {
+      return;
+    }
+    final halfWidth = player.size.x / 2;
+    final halfHeight = player.size.y / 2;
+    final clampedX = player.position.x
+        .clamp(_mapBounds.left + halfWidth, _mapBounds.right - halfWidth);
+    final clampedY = player.position.y
+        .clamp(_mapBounds.top + halfHeight, _mapBounds.bottom - halfHeight);
+    player.position = Vector2(clampedX, clampedY);
+  }
+
+  void _handleExitReached() {
+    if (_isMapTransitioning) {
+      return;
+    }
+    _isMapTransitioning = true;
+    _mapIndex += 1;
+    _loadMap(_mapIndex);
+    _isMapTransitioning = false;
   }
 
   Vector2 _directionFromKeys(Set<LogicalKeyboardKey> keysPressed) {
