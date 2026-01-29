@@ -6,6 +6,7 @@ import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flame/text.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -57,7 +58,7 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   int get score => _score;
 
   @override
-  Color backgroundColor() => const Color(0xFF0B0C10);
+  Color backgroundColor() => Colors.transparent;
 
   @override
   Future<void> onLoad() async {
@@ -146,6 +147,10 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     _bossFireTimer.timer.stop();
 
     _stageManager = StageManager(onStageChanged: _onStageChanged);
+
+    if (kDebugMode) {
+      debugMode = true;
+    }
   }
 
   @override
@@ -288,11 +293,12 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   }
 
   Future<void> unlockAudio() async {
+    // Always allow dismissing the overlay, even if audio was already unlocked.
+    overlays.remove(audioOverlayId);
     if (_audioUnlocked) {
       return;
     }
     _audioUnlocked = true;
-    overlays.remove(audioOverlayId);
     await _noteAudio.play(Note.c);
   }
 
@@ -540,11 +546,9 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   }
 
   void startGame() {
-    if (_gameStarted) {
-      return;
-    }
     _gameStarted = true;
     restart();
+    _spawnMonsterNearPlayer();
     overlays.remove(homeOverlayId);
     overlays.remove(splashOverlayId);
     overlays.add(audioOverlayId);
@@ -553,6 +557,36 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   void showHomeOverlay() {
     overlays.remove(splashOverlayId);
     overlays.add(homeOverlayId);
+  }
+
+  void _spawnMonsterNearPlayer() {
+    final player = _player;
+    if (player == null) {
+      return;
+    }
+    // Spawn one monster close to the player so visibility/spawn issues are obvious.
+    final angle = _random.nextDouble() * pi * 2;
+    final offset = Vector2(cos(angle), sin(angle)) * 220;
+    final speedBase = 70 + _random.nextDouble() * 50;
+    StagePhase phase;
+    try {
+      phase = _stageManager.phase;
+    } catch (_) {
+      phase = StagePhase.stage1;
+    }
+    final speed =
+        speedBase * _monsterSpeedScale * speedMultiplierFor(phase);
+    final monster = Monster(
+      targetProvider: () => player.position.clone(),
+      note: _randomNote(),
+      baseSpeed: speed,
+    )..position = player.position + offset;
+    _monsters.add(monster);
+    world.add(monster);
+    monster.removed.then((_) {
+      _monsters.remove(monster);
+      _listeningMonsters.remove(monster);
+    });
   }
 
   void _fireBossProjectile() {
@@ -572,7 +606,13 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
   }
 
   Note _randomNote() {
-    final pool = notePoolFor(_stageManager.phase);
+    StagePhase phase;
+    try {
+      phase = _stageManager.phase;
+    } catch (_) {
+      phase = StagePhase.stage1;
+    }
+    final pool = notePoolFor(phase);
     final values = Note.values;
     final index = pool[_random.nextInt(pool.length)];
     return values[index];

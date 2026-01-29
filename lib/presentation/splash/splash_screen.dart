@@ -17,9 +17,9 @@ class SplashScreen extends StatelessWidget {
 
     return StreamBuilder<SplashState>(
       stream: viewModel.state,
-      initialData: const SplashState(),
+      initialData: viewModel.currentState,
       builder: (context, snapshot) {
-        final state = snapshot.data ?? const SplashState();
+        final state = snapshot.data ?? viewModel.currentState;
         return Container(
           color: const Color(0xFF0B0C10),
           alignment: Alignment.center,

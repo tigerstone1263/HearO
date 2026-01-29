@@ -10,7 +10,15 @@ class SplashViewModel {
     required this.onComplete,
     this.duration = const Duration(milliseconds: 1500),
   }) {
-    _stateController.add(const SplashState());
+    state = Stream.multi((controller) {
+      controller.add(_state);
+      final sub = _stateController.stream.listen(
+        controller.add,
+        onError: controller.addError,
+        onDone: controller.close,
+      );
+      controller.onCancel = sub.cancel;
+    });
     _intentController.stream.listen(_handleIntent);
   }
 
@@ -21,8 +29,9 @@ class SplashViewModel {
   SplashState _state = const SplashState();
   Timer? _timer;
   bool _started = false;
+  late final Stream<SplashState> state;
 
-  Stream<SplashState> get state => _stateController.stream;
+  SplashState get currentState => _state;
   void dispatch(SplashIntent intent) => _intentController.add(intent);
 
   void start() {

@@ -1,6 +1,7 @@
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:flame/cache.dart';
+import 'package:flame/game.dart';
+import 'package:flutter/material.dart';
 
 import 'listening_circle.dart';
 import 'monster.dart';
@@ -8,7 +9,8 @@ import 'projectile.dart';
 
 enum PlayerState { idle, walk }
 
-class Player extends SpriteAnimationComponent with CollisionCallbacks {
+class Player extends SpriteAnimationComponent
+    with CollisionCallbacks, HasGameRef<FlameGame> {
   Player({
     super.position,
     this.baseSpeed = 180,
@@ -18,14 +20,19 @@ class Player extends SpriteAnimationComponent with CollisionCallbacks {
   })
       : super(
           anchor: Anchor.center,
-          size: Vector2(96, 138),
+          size: Vector2(48, 69),
         );
 
-  static const String _idleSpritePath = 'assets/images/player1/idle.png';
-  static const String _walkSpritePath = 'assets/images/player1/walk.png';
-  static final Images _imageCache = Images(prefix: '');
-  static final Vector2 _frameSize = Vector2(864, 241);
-  static const int _framesPerRow = 4;
+  // Use paths relative to Flame's default `assets/images/` prefix.
+  // This avoids issues like `assets/assets/images/...` when loading on web.
+  // Use the knight sheet for both idle (static first frame) and walk (4-frame loop).
+  static const String _idleSpritePath = 'player1/walk.png';
+  static const String _walkSpritePath = 'player1/walk.png';
+  // walk.png is 864x241 => 4x1 grid => 216x241, 4 frames.
+  static final Vector2 _walkFrameSize = Vector2(216, 241);
+  static final Vector2 _idleFrameSize = _walkFrameSize;
+  static const int _idleFrameCount = 1;
+  static const int _walkFrameCount = 4;
   final double baseSpeed;
   final void Function(PositionComponent other)? onListeningEnter;
   final void Function(PositionComponent other)? onListeningExit;
@@ -42,11 +49,15 @@ class Player extends SpriteAnimationComponent with CollisionCallbacks {
     await super.onLoad();
     listeningRadius = size.x * 1.5;
     _animations[PlayerState.idle] = await _buildAnimation(
-      _idleSpritePath,
+      spritePath: _idleSpritePath,
+      frameSize: _idleFrameSize,
+      frameCount: _idleFrameCount,
       stepTime: 0.18,
     );
     _animations[PlayerState.walk] = await _buildAnimation(
-      _walkSpritePath,
+      spritePath: _walkSpritePath,
+      frameSize: _walkFrameSize,
+      frameCount: _walkFrameCount,
       stepTime: 0.12,
     );
     _animationsReady = true;
@@ -67,6 +78,17 @@ class Player extends SpriteAnimationComponent with CollisionCallbacks {
       CircleHitbox()
         ..collisionType = CollisionType.active
         ..isSolid = true,
+    );
+
+    add(
+      CircleComponent(
+        radius: 17,
+        paint: Paint()..color = Colors.black.withOpacity(0.18),
+        priority: -2,
+      )
+        ..anchor = Anchor.center
+        ..position = Vector2(0, size.y / 2 - 6)
+        ..scale = Vector2(1.6, 0.36),
     );
   }
 
@@ -116,17 +138,19 @@ class Player extends SpriteAnimationComponent with CollisionCallbacks {
     position.add(_moveDirection * baseSpeed * dt);
   }
 
-  Future<SpriteAnimation> _buildAnimation(
-    String spritePath, {
+  Future<SpriteAnimation> _buildAnimation({
+    required String spritePath,
+    required Vector2 frameSize,
+    required int frameCount,
     required double stepTime,
   }) async {
-    final image = await _imageCache.load(spritePath);
+    final image = await gameRef.images.load(spritePath);
     return SpriteAnimation.fromFrameData(
       image,
       SpriteAnimationData.sequenced(
-        amount: _framesPerRow,
+        amount: frameCount,
         stepTime: stepTime,
-        textureSize: _frameSize,
+        textureSize: frameSize,
       ),
     );
   }

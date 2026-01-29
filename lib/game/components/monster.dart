@@ -50,6 +50,29 @@ class Monster extends CircleComponent with CollisionCallbacks {
         ..collisionType = CollisionType.passive
         ..isSolid = true,
     );
+
+    add(
+      CircleComponent(
+        radius: radius * 1.8,
+        paint: Paint()..color = const Color(0x22000000),
+        priority: -2,
+      )
+        ..anchor = Anchor.center
+        ..position = Vector2(0, radius * 0.85)
+        ..scale = Vector2(1.5, 0.45),
+    );
+
+    // Outline for visibility on light backgrounds.
+    add(
+      CircleComponent(
+        radius: radius,
+        paint: Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..color = Colors.black.withOpacity(0.35),
+        priority: 1,
+      )..anchor = Anchor.center,
+    );
   }
 
 

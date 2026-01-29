@@ -11,7 +11,16 @@ class HomeViewModel {
           saves: _defaultSaves,
           selectedSaveId: _defaultSaves.first.id,
         ) {
-    _stateController.add(_state);
+    // StreamBuilder shouldn't miss the initial state even with broadcast streams.
+    state = Stream.multi((controller) {
+      controller.add(_state);
+      final sub = _stateController.stream.listen(
+        controller.add,
+        onError: controller.addError,
+        onDone: controller.close,
+      );
+      controller.onCancel = sub.cancel;
+    });
     _intentController.stream.listen(_handleIntent);
   }
 
@@ -40,8 +49,9 @@ class HomeViewModel {
   final _stateController = StreamController<HomeState>.broadcast();
   final _intentController = StreamController<HomeIntent>();
   HomeState _state;
+  late final Stream<HomeState> state;
 
-  Stream<HomeState> get state => _stateController.stream;
+  HomeState get currentState => _state;
   void dispatch(HomeIntent intent) => _intentController.add(intent);
 
   void _handleIntent(HomeIntent intent) {

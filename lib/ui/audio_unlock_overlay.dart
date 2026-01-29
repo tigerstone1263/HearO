@@ -15,7 +15,7 @@ class AudioUnlockOverlay extends StatelessWidget {
         game.unlockAudio();
       },
       child: Container(
-        color: const Color(0xFF0B0C10).withOpacity(0.75),
+        color: Colors.black.withOpacity(0.35),
         alignment: Alignment.center,
         padding: const EdgeInsets.all(24),
         child: Column(
