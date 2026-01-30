@@ -7,7 +7,7 @@ import 'listening_circle.dart';
 import 'monster.dart';
 import 'projectile.dart';
 
-enum PlayerState { idle, walk }
+enum PlayerFacing { back, front }
 
 class Player extends SpriteAnimationComponent
     with CollisionCallbacks, HasGameRef<FlameGame> {
@@ -20,19 +20,20 @@ class Player extends SpriteAnimationComponent
   })
       : super(
           anchor: Anchor.center,
-          size: Vector2(48, 69),
+          size: Vector2.all(_frameSide * _spriteScale),
         );
 
   // Use paths relative to Flame's default `assets/images/` prefix.
   // This avoids issues like `assets/assets/images/...` when loading on web.
   // Use the knight sheet for both idle (static first frame) and walk (4-frame loop).
-  static const String _idleSpritePath = 'player1/walk.png';
-  static const String _walkSpritePath = 'player1/walk.png';
-  // walk.png is 864x241 => 4x1 grid => 216x241, 4 frames.
-  static final Vector2 _walkFrameSize = Vector2(216, 241);
-  static final Vector2 _idleFrameSize = _walkFrameSize;
-  static const int _idleFrameCount = 1;
-  static const int _walkFrameCount = 4;
+  static const String _backSpritePath = 'Main Characters/player1/back.webp';
+  static const String _frontSpritePath = 'Main Characters/player1/front.webp';
+  static const double _frameSide = 1024;
+  static const double _spriteScale = 0.16;
+  static final Vector2 _backFrameSize = Vector2(_frameSide, _frameSide);
+  static final Vector2 _frontFrameSize = Vector2(_frameSide, _frameSide);
+  static const int _backFrameCount = 1;
+  static const int _frontFrameCount = 1;
   final double baseSpeed;
   final void Function(PositionComponent other)? onListeningEnter;
   final void Function(PositionComponent other)? onListeningExit;
@@ -40,29 +41,29 @@ class Player extends SpriteAnimationComponent
   late final double listeningRadius;
   Vector2 _moveDirection = Vector2.zero();
 
-  final Map<PlayerState, SpriteAnimation> _animations = {};
+  final Map<PlayerFacing, SpriteAnimation> _animations = {};
   bool _animationsReady = false;
-  PlayerState _state = PlayerState.idle;
+  PlayerFacing _facing = PlayerFacing.front;
+  bool _facingLeft = false;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     listeningRadius = size.x * 1.5;
-    _animations[PlayerState.idle] = await _buildAnimation(
-      spritePath: _idleSpritePath,
-      frameSize: _idleFrameSize,
-      frameCount: _idleFrameCount,
+    _animations[PlayerFacing.back] = await _buildAnimation(
+      spritePath: _backSpritePath,
+      frameSize: _backFrameSize,
+      frameCount: _backFrameCount,
       stepTime: 0.18,
     );
-    _animations[PlayerState.walk] = await _buildAnimation(
-      spritePath: _walkSpritePath,
-      frameSize: _walkFrameSize,
-      frameCount: _walkFrameCount,
+    _animations[PlayerFacing.front] = await _buildAnimation(
+      spritePath: _frontSpritePath,
+      frameSize: _frontFrameSize,
+      frameCount: _frontFrameCount,
       stepTime: 0.12,
     );
     _animationsReady = true;
-    _state = _moveDirection.length2 > 0 ? PlayerState.walk : PlayerState.idle;
-    animation = _animations[_state];
+    animation = _animations[_facing];
 
     add(
       ListeningCircle(
@@ -105,28 +106,38 @@ class Player extends SpriteAnimationComponent
     }
   }
 
-  void setMoving(bool isMoving) {
-    final nextState = isMoving ? PlayerState.walk : PlayerState.idle;
-    if (nextState == _state) {
-      return;
-    }
-
-    _state = nextState;
-    if (!_animationsReady) {
-      return;
-    }
-    animation = _animations[_state];
-  }
-
   void setMoveDirection(Vector2 direction) {
     if (direction.length2 == 0) {
       _moveDirection = Vector2.zero();
-      setMoving(false);
       return;
     }
 
     _moveDirection = direction.normalized();
-    setMoving(true);
+    if (direction.y < 0) {
+      _setFacing(PlayerFacing.back);
+    } else if (direction.y > 0) {
+      _setFacing(PlayerFacing.front);
+    }
+    if (direction.x != 0) {
+      _facingLeft = direction.x < 0;
+      _updateFacing();
+    }
+  }
+
+  void _setFacing(PlayerFacing facing) {
+    if (facing == _facing) {
+      return;
+    }
+    _facing = facing;
+    if (!_animationsReady) {
+      return;
+    }
+    animation = _animations[_facing];
+  }
+
+  void _updateFacing() {
+    final baseScaleX = scale.x.abs();
+    scale.x = _facingLeft ? -baseScaleX : baseScaleX;
   }
 
   @override
@@ -136,6 +147,16 @@ class Player extends SpriteAnimationComponent
       return;
     }
     position.add(_moveDirection * baseSpeed * dt);
+    if (_moveDirection.y != 0) {
+      _setFacing(_moveDirection.y < 0 ? PlayerFacing.back : PlayerFacing.front);
+    }
+    if (_moveDirection.x != 0) {
+      final shouldFaceLeft = _moveDirection.x < 0;
+      if (shouldFaceLeft != _facingLeft) {
+        _facingLeft = shouldFaceLeft;
+        _updateFacing();
+      }
+    }
   }
 
   Future<SpriteAnimation> _buildAnimation({

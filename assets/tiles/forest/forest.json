@@ -1,0 +1,99 @@
+{
+  "meta": {
+    "theme": "dark_forest",
+    "tileSize": 16,
+    "chunkTiles": 32,
+    "export": {
+      "format": "webp",
+      "scaleOutputPx": 512,
+      "upscale": "nearest",
+      "noTransparency": true
+    }
+  },
+
+  "tileset": {
+    "type": "individual_files",
+    "naming": "dark_forest_tile_{id}_{name}_512.webp",
+    "files": {
+      "0": "assets/tiles/forest/ground_forest_1.webp",
+      "1": "assets/tiles/forest/ground_forest_2.webp",
+      "2": "assets/tiles/forest/ground_forest_3.webp",
+      "3": "assets/tiles/forest/moss_forest_4.webp"
+    }
+  },
+
+  "collision": {
+    "solidTileIds": [],
+    "slowTileIds": [],
+    "waterTileIds": [],
+    "damageTileIds": []
+  },
+
+  "generation": {
+    "baseFill": {
+      "method": "weightedRandom",
+      "tileIds": [0, 1, 2, 3],
+      "weights": [1.0, 0.35, 0.25, 0.2],
+      "notes": "청크 기본 채움. 0이 기본, 1/2/3은 변형."
+    },
+    "rules": [
+      {
+        "whenNearTileIds": [3],
+        "biasTowardTileIds": [3, 0],
+        "strength": 0.15,
+        "notes": "이끼 타일은 군집감이 생기게 살짝 뭉치도록(선택)."
+      }
+    ]
+  },
+
+  "tiles": [
+    {
+      "id": 0,
+      "name": "ground_forest_floor",
+      "category": "ground",
+      "tags": ["ground", "forest", "base"],
+      "collision": "none",
+      "moveCost": 1.0,
+      "visual": {
+        "paletteHint": "dark_brown",
+        "detail": ["leaf_litter", "small_stones", "twigs"]
+      }
+    },
+    {
+      "id": 1,
+      "name": "ground_forest_floor_alt1",
+      "category": "ground",
+      "tags": ["ground", "forest", "variation"],
+      "collision": "none",
+      "moveCost": 1.0,
+      "visual": {
+        "paletteHint": "dark_brown",
+        "detail": ["more_leaves", "more_stones"]
+      }
+    },
+    {
+      "id": 2,
+      "name": "ground_forest_floor_alt2",
+      "category": "ground",
+      "tags": ["ground", "forest", "variation", "damp"],
+      "collision": "none",
+      "moveCost": 1.0,
+      "visual": {
+        "paletteHint": "cool_brown",
+        "detail": ["damp_soil", "pebbles"]
+      }
+    },
+    {
+      "id": 3,
+      "name": "ground_mossy",
+      "category": "ground",
+      "tags": ["ground", "moss", "cool"],
+      "collision": "none",
+      "moveCost": 1.0,
+      "visual": {
+        "paletteHint": "green_black",
+        "detail": ["moss_clusters", "cool_moonlight"]
+      }
+    }
+  ]
+}

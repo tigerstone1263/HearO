@@ -92,7 +92,10 @@ flutter:
   assets:
     - assets/sounds/
     - assets/images/
+    - assets/images/Main Characters/
+    - assets/images/Main Characters/player1/
     - assets/images/player1/
+    - assets/tiles/forest/
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see

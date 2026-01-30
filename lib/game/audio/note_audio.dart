@@ -5,12 +5,27 @@ enum Note { c, d, e, f, g, a, b }
 class NoteAudio {
   final Map<Note, AudioPlayer> _players = {};
   final Set<Note> _configured = {};
+  double _volume = 1.0;
+
+  double get volume => _volume;
+
+  Future<void> setVolume(double value) async {
+    final next = value.clamp(0.0, 1.0);
+    if (next == _volume) {
+      return;
+    }
+    _volume = next;
+    for (final player in _players.values) {
+      await player.setVolume(_volume);
+    }
+  }
 
   Future<void> play(Note note) async {
     final player = _players.putIfAbsent(note, AudioPlayer.new);
     if (!_configured.contains(note)) {
       await player.setPlayerMode(PlayerMode.lowLatency);
       await player.setReleaseMode(ReleaseMode.stop);
+      await player.setVolume(_volume);
       _configured.add(note);
     }
 

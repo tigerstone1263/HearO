@@ -2,14 +2,16 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hear_o/core/di/di_setup.dart';
+import 'package:hear_o/core/router/route_names.dart';
+import 'package:hear_o/core/router/router.dart';
 import 'package:hear_o/env.dart';
 import 'package:hear_o/presentation/main/main_view.dart';
 
 import 'game/hear_o_game.dart';
-import 'ui/audio_unlock_overlay.dart';
 import 'ui/end_overlay.dart';
 import 'ui/forest_background.dart';
-import 'ui/home_overlay.dart';
+import 'ui/pause_button_overlay.dart';
+import 'ui/pause_menu_overlay.dart';
 import 'ui/splash_overlay.dart';
 
 Future<void> main() async {
@@ -18,6 +20,12 @@ Future<void> main() async {
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
+
+  SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      // SystemUiMode.edgeToEdge,
+      overlays:[]
+  );
 
   await EnvConstants.initialize(Environment.dev);
   await diSetUp();
@@ -50,13 +58,7 @@ class HearOApp extends StatelessWidget {
                   game: game,
                   overlayBuilderMap: {
                     HearOGame.splashOverlayId: (context, game) => SplashOverlay(
-                          onComplete: () => (game as HearOGame).showHomeOverlay(),
-                        ),
-                    HearOGame.homeOverlayId: (context, game) => HomeOverlay(
-                          onStart: () => (game as HearOGame).startGame(),
-                        ),
-                    HearOGame.audioOverlayId: (context, game) => AudioUnlockOverlay(
-                          game: game,
+                          onComplete: () => (game as HearOGame).startGame(),
                         ),
                     HearOGame.gameOverOverlayId: (context, game) => EndOverlay(
                           title: 'Game Over',
@@ -67,6 +69,56 @@ class HearOApp extends StatelessWidget {
                           title: 'Clear!',
                           score: game.score,
                           onRestart: game.restart,
+                        ),
+                    HearOGame.pauseButtonOverlayId: (context, game) =>
+                        PauseButtonOverlay(
+                          onPause: () => (game as HearOGame).pauseGame(),
+                        ),
+                    HearOGame.pauseMenuOverlayId: (context, game) =>
+                        PauseMenuOverlay(
+                          onResume: () => (game as HearOGame).resumeGame(),
+                          onHome: () {
+                            (game as HearOGame).returnToHomeFromPause();
+                            getIt<AppRouterService>()
+                                .router
+                                .go(RouteNames.root);
+                          },
+                          onSettings: () {
+                            final gameRef = game as HearOGame;
+                            showDialog<void>(
+                              context: context,
+                              builder: (context) {
+                                var volume = gameRef.volume;
+                                return StatefulBuilder(
+                                  builder: (context, setState) => AlertDialog(
+                                    title: const Text('설정'),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('효과음 볼륨'),
+                                        Slider(
+                                          value: volume,
+                                          onChanged: (value) {
+                                            setState(() => volume = value);
+                                            gameRef.setVolume(value);
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(),
+                                        child: const Text('닫기'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
                   },
                   initialActiveOverlays: const [HearOGame.splashOverlayId],

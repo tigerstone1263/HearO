@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hear_o/game/hear_o_game.dart';
 import 'package:hear_o/main.dart';
-import 'package:hear_o/presentation/root/root.dart';
+import 'package:hear_o/presentation/home/home_view.dart';
 
 import 'route_names.dart';
 
@@ -53,7 +53,7 @@ class AppRouterService with ChangeNotifier {
           name: RouteNames.root,
           path: RouteNames.root,
           builder: (context, state) =>
-              Root(key: ValueKey(state.uri.toString()))),
+              HomeView(key: ValueKey(state.uri.toString()))),
   //     // GoRoute(
   //     //   path: RouteNames.login,
   //     //   builder:
