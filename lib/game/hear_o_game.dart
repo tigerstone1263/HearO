@@ -9,6 +9,7 @@ import 'package:flame/text.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hear_o/domain/characters/players/ghost_knight/ghost_knight_config.dart';
 
 import 'audio/note_audio.dart';
 import 'components/gold_note.dart';
@@ -73,7 +74,9 @@ class HearOGame extends FlameGame with KeyboardEvents, HasCollisionDetection {
     await super.onLoad();
     _forestMap = InfiniteForestMap();
     world.add(_forestMap);
+    final playerConfig = GhostKnightConfig.defaultConfig;
     _player = Player(
+      config: playerConfig,
       position: size / 2,
       onListeningEnter: _handleListeningEnter,
       onListeningExit: _handleListeningExit,

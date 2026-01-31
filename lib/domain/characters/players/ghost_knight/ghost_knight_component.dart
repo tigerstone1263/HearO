@@ -2,39 +2,41 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:hear_o/domain/characters/players/player_component.dart';
 
-import 'listening_circle.dart';
-import 'monster.dart';
-import 'projectile.dart';
+import '../player_config.dart';
 
 enum PlayerFacing { back, front }
 
-class Player extends SpriteAnimationComponent
-    with CollisionCallbacks, HasGameRef<FlameGame> {
-  Player({
+class PlayerGhostKnight extends SpriteAnimationComponent
+    with CollisionCallbacks, HasGameRef<FlameGame>
+    implements PlayerComponent {
+  PlayerGhostKnight({
+    required this.config,
     super.position,
-    this.baseSpeed = 180,
     this.onListeningEnter,
     this.onListeningExit,
     this.onHit,
   })
       : super(
-          anchor: Anchor.center,
-          size: Vector2.all(_frameSide * _spriteScale),
-        );
+    anchor: Anchor.center,
+    size: config.renderSize,
+  ) {
+    currentHealth = config.maxHealth;
+  }
 
   // Use paths relative to Flame's default `assets/images/` prefix.
   // This avoids issues like `assets/assets/images/...` when loading on web.
   // Use the knight sheet for both idle (static first frame) and walk (4-frame loop).
-  static const String _backSpritePath = 'Main Characters/player1/back.webp';
-  static const String _frontSpritePath = 'Main Characters/player1/front.webp';
-  static const double _frameSide = 1024;
-  static const double _spriteScale = 0.16;
-  static final Vector2 _backFrameSize = Vector2(_frameSide, _frameSide);
-  static final Vector2 _frontFrameSize = Vector2(_frameSide, _frameSide);
   static const int _backFrameCount = 1;
   static const int _frontFrameCount = 1;
-  final double baseSpeed;
+  final PlayerConfig config;
+  @override
+  double get baseSpeed => config.baseSpeed;
+  @override
+  int get maxHealth => config.maxHealth;
+  @override
+  int currentHealth = 0;
   final void Function(PositionComponent other)? onListeningEnter;
   final void Function(PositionComponent other)? onListeningExit;
   final void Function(PositionComponent other)? onHit;
@@ -51,14 +53,14 @@ class Player extends SpriteAnimationComponent
     await super.onLoad();
     listeningRadius = size.x * 1.5;
     _animations[PlayerFacing.back] = await _buildAnimation(
-      spritePath: _backSpritePath,
-      frameSize: _backFrameSize,
+      spritePath: config.backSpritePath,
+      frameSize: config.frameSize,
       frameCount: _backFrameCount,
       stepTime: 0.18,
     );
     _animations[PlayerFacing.front] = await _buildAnimation(
-      spritePath: _frontSpritePath,
-      frameSize: _frontFrameSize,
+      spritePath: config.frontSpritePath,
+      frameSize: config.frameSize,
       frameCount: _frontFrameCount,
       stepTime: 0.12,
     );

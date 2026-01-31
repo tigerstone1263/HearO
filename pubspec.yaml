@@ -92,9 +92,9 @@ flutter:
   assets:
     - assets/sounds/
     - assets/images/
-    - assets/images/Main Characters/
-    - assets/images/Main Characters/player1/
-    - assets/images/player1/
+    - assets/images/characters/
+    - assets/images/characters/ghost_knight/
+    - assets/images/ghost_knight/
     - assets/tiles/forest/
     - .env
 
